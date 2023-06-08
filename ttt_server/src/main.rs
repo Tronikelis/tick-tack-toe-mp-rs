@@ -140,7 +140,7 @@ fn main() {
                         return;
                     }
 
-                    send_game_loop(&mut stream, GameLoop::Board(game_instance.print_board()))
+                    send_game_loop(&mut stream, GameLoop::Board(game_instance.board.clone()))
                         .unwrap();
                 }
             }

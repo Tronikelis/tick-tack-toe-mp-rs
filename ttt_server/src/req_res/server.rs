@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{io::Write, net::TcpStream};
 
-use crate::game::instance::Player;
+use crate::game::instance::{Board, Player};
 
 #[derive(Serialize, Deserialize)]
 pub enum ServerResponse {
@@ -15,7 +15,7 @@ pub enum ServerResponse {
 
 #[derive(Serialize, Deserialize)]
 pub enum GameLoop {
-    Board(String),
+    Board(Board),
     Won(Player),
 }
 

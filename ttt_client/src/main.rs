@@ -27,8 +27,8 @@ fn clear_stdin() {
 }
 
 fn game_loop(stream: &mut TcpStream, player: Player) -> Result<()> {
-    let game_id = player.game_id;
-    let mut previous_board = String::new();
+    let game_id = &player.game_id;
+    let mut prev_board_str = String::new();
 
     loop {
         thread::sleep(Duration::from_millis(16));
@@ -42,36 +42,35 @@ fn game_loop(stream: &mut TcpStream, player: Player) -> Result<()> {
         if let ServerResponse::GameLoop(game_loop) = response {
             match game_loop {
                 GameLoop::Board(board) => {
-                    // nothing changed so, yea
-                    if previous_board == board {
+                    let board_str = board.print_board();
+                    if prev_board_str == board_str {
                         continue;
                     }
-                    previous_board = board.clone();
+                    prev_board_str = board_str.clone();
 
                     clear_stdin();
-
                     println!("game_id: {}", game_id);
-                    println!("\n{}\n", board);
-                    println!(
-                        "You are {}, what's your choice?",
-                        match player.tile {
-                            Tile::O => "O",
-                            Tile::X => "X",
-                        }
-                    );
+                    println!("\n{}\n", board_str);
+                    println!("You are {}", player.tile.to_string());
 
-                    let selection: usize = read_stdin()?.parse()?;
+                    if board.turn == player {
+                        println!("Your choice?");
+                        let selection: usize = read_stdin()?.parse()?;
 
-                    stream.write_all(
-                        serde_json::to_string(&ClientRequest::SetTile((
-                            game_id.clone(),
-                            selection,
-                        )))?
-                        .as_bytes(),
-                    )?;
-                    read_from_stream(stream)?;
+                        stream.write_all(
+                            serde_json::to_string(&ClientRequest::SetTile((
+                                game_id.clone(),
+                                selection,
+                            )))?
+                            .as_bytes(),
+                        )?;
+                        read_from_stream(stream)?;
+                        continue;
+                    }
+
+                    println!("Waiting for opponent");
                 }
-                GameLoop::Won(_) => todo!("nyi"),
+                GameLoop::Won(_) => todo!(),
             };
         }
     }

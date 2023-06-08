@@ -14,6 +14,24 @@ pub enum Tile {
     O,
 }
 
+impl Tile {
+    pub fn inverse(&self) -> Self {
+        return match self {
+            Self::O => Self::X,
+            Self::X => Self::O,
+        };
+    }
+}
+
+impl ToString for Tile {
+    fn to_string(&self) -> String {
+        return match self {
+            Self::O => "O".to_string(),
+            Self::X => "X".to_string(),
+        };
+    }
+}
+
 // player == tile
 impl PartialEq<Player> for Tile {
     fn eq(&self, other: &Player) -> bool {
@@ -24,6 +42,7 @@ impl PartialEq<Player> for Tile {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Board {
     pub tiles: [Option<Tile>; 9],
+    pub turn: Tile,
 }
 
 #[derive(Clone, Debug)]
@@ -33,22 +52,10 @@ pub struct GameInstance {
     pub players: [Player; 2],
 }
 
-impl GameInstance {
-    pub fn new(id: String, players: [Player; 2]) -> Result<Self> {
-        let board = Board {
-            tiles: [(); 9].map(|_| None),
-        };
-
-        if players[0].tile == players[1].tile {
-            return Err(anyhow!("players have to be separate!"));
-        }
-
-        return Ok(Self { id, board, players });
-    }
-
+impl Board {
     pub fn print_board(&self) -> String {
         let mut string = String::new();
-        for (i, tile) in self.board.tiles.iter().enumerate() {
+        for (i, tile) in self.tiles.iter().enumerate() {
             if i % 3 == 0 {
                 string.push('\n');
             }
@@ -64,12 +71,29 @@ impl GameInstance {
 
         return string;
     }
+}
+
+impl GameInstance {
+    pub fn new(id: String, players: [Player; 2]) -> Result<Self> {
+        let board = Board {
+            turn: Tile::X,
+            tiles: [(); 9].map(|_| None),
+        };
+
+        if players[0].tile == players[1].tile {
+            return Err(anyhow!("players have to be separate!"));
+        }
+
+        return Ok(Self { id, board, players });
+    }
 
     pub fn set_tile(&mut self, tile_idx: usize, tile: Tile) -> Result<()> {
         match self.board.tiles.get_mut(tile_idx) {
             Some(current_tile) => {
                 if current_tile.is_none() {
                     *current_tile = Some(tile);
+                    self.board.turn = self.board.turn.inverse();
+
                     return Ok(());
                 }
 
