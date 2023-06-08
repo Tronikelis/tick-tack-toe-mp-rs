@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 use ttt_server::{
-    game::instance::{Player, Tile},
+    game::instance::Player,
     req_res::{
         client::ClientRequest,
         server::{GameLoop, ServerResponse},
