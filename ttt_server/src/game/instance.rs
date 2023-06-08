@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct Player {
     pub tile: Tile,
     pub addr: Option<String>,
+    pub game_id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -149,6 +150,7 @@ impl GameInstance {
         for player in &mut self.players {
             if player.addr.is_none() {
                 let added = Player {
+                    game_id: self.id.clone(),
                     addr: Some(addr),
                     tile: match existing_player
                         .as_ref()

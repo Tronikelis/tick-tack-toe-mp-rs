@@ -31,15 +31,19 @@ fn main() {
 
         thread::spawn(move || loop {
             let client_command: ClientRequest =
-                serde_json::from_str(&read_from_stream(&mut stream).unwrap()).unwrap();
+                match serde_json::from_str(&read_from_stream(&mut stream).unwrap()) {
+                    Ok(x) => x,
+                    Err(_) => return,
+                };
 
             match client_command {
                 // creates a game
-                // returns a player
+                // returns a (player, id)
                 ClientRequest::CreateGame => {
                     let id = nanoid!();
 
                     let client_player = Player {
+                        game_id: id.clone(),
                         addr: Some(addr.to_string()),
                         tile: Tile::X,
                     };
@@ -50,7 +54,8 @@ fn main() {
                             client_player.clone(),
                             Player {
                                 addr: None,
-                                tile: Tile::X,
+                                tile: Tile::O,
+                                game_id: id.clone(),
                             },
                         ],
                     ) {
