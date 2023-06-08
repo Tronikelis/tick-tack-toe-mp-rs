@@ -3,7 +3,6 @@
 use nanoid::nanoid;
 use std::{
     collections::HashMap,
-    io::Write,
     net::TcpListener,
     sync::{Arc, Mutex},
     thread,
@@ -15,7 +14,7 @@ use game::instance::{GameInstance, Player, Tile};
 mod req_res;
 use req_res::{
     client::ClientRequest,
-    server::{send_board, send_nothing, send_player, ServerResponse},
+    server::{send_board, send_nothing, send_player},
 };
 
 mod utils;
