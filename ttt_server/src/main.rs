@@ -38,7 +38,7 @@ fn main() {
 
             match client_command {
                 // creates a game
-                // returns a (player, id)
+                // returns a player
                 ClientRequest::CreateGame => {
                     let id = nanoid!();
 
