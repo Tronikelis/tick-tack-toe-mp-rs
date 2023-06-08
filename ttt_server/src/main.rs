@@ -124,7 +124,6 @@ fn main() {
                     send_nothing(&mut stream).unwrap();
                 }
 
-                // returns the board in just plain text
                 ClientRequest::GameLoop(id) => {
                     let mut games_locked = games.lock().unwrap();
                     let game_instance = match games_locked.get_mut(&id) {
@@ -136,7 +135,8 @@ fn main() {
                     };
 
                     if let Some(player) = game_instance.check_wins() {
-                        send_game_loop(&mut stream, GameLoop::Won(player)).unwrap();
+                        send_game_loop(&mut stream, GameLoop::Won(player.tile)).unwrap();
+                        games_locked.remove(&id);
                         return;
                     }
 

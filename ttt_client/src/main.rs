@@ -70,7 +70,15 @@ fn game_loop(stream: &mut TcpStream, player: Player) -> Result<()> {
 
                     println!("Waiting for opponent");
                 }
-                GameLoop::Won(_) => todo!(),
+                GameLoop::Won(tile) => {
+                    if tile == player {
+                        println!("You won");
+                    } else {
+                        println!("You lost");
+                    }
+
+                    return Ok(());
+                }
             };
         }
     }
@@ -79,10 +87,11 @@ fn game_loop(stream: &mut TcpStream, player: Player) -> Result<()> {
 fn main() -> Result<()> {
     let server_ip = "127.0.0.1:3000";
 
-    let mut stream = TcpStream::connect(server_ip).unwrap();
-
     loop {
+        let mut stream = TcpStream::connect(server_ip).unwrap();
+
         println!("game [create / join]?");
+
         match read_stdin().unwrap().as_str() {
             "create" => {
                 stream.write_all(serde_json::to_string(&ClientRequest::CreateGame)?.as_bytes())?;
@@ -90,7 +99,10 @@ fn main() -> Result<()> {
                     serde_json::from_str(&read_from_stream(&mut stream)?)?;
 
                 if let ServerResponse::Player(player) = response {
-                    game_loop(&mut stream, player)?;
+                    if let Err(err) = game_loop(&mut stream, player) {
+                        println!("RESTARTING: {}", err);
+                        continue;
+                    }
                 } else {
                     panic!("incorrect server response, expected player to be returned");
                 }
@@ -107,7 +119,10 @@ fn main() -> Result<()> {
                     serde_json::from_str(&read_from_stream(&mut stream)?)?;
 
                 if let ServerResponse::Player(player) = response {
-                    game_loop(&mut stream, player)?;
+                    if let Err(err) = game_loop(&mut stream, player) {
+                        println!("RESTARTING: {}", err);
+                        continue;
+                    }
                 } else {
                     panic!("incorrect server response, expected player to be returned");
                 }
