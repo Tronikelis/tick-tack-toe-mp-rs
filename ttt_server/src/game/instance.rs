@@ -53,6 +53,8 @@ pub struct GameInstance {
 }
 
 impl Board {
+    // this gets used in ttt_client
+    #[allow(dead_code)]
     pub fn print_board(&self) -> String {
         let mut string = String::new();
         for (i, tile) in self.tiles.iter().enumerate() {
@@ -61,7 +63,7 @@ impl Board {
             }
 
             match tile {
-                None => string.push_str(" _ "),
+                None => string.push_str(" - "),
                 Some(tile) => match tile {
                     Tile::O => string.push_str(" O "),
                     Tile::X => string.push_str(" X "),
