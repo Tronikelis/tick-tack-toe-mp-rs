@@ -1,6 +1,6 @@
 #![allow(clippy::needless_return)]
 
-use anyhow::{anyhow, Result};
+
 use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -12,7 +12,7 @@ use std::{
 };
 
 mod game;
-use game::instance::{Board, GameInstance, Player, Tile};
+use game::instance::{GameInstance, Player, Tile};
 
 fn read_from_stream(stream: &mut TcpStream) -> String {
     let mut buffer = [0; 64];
