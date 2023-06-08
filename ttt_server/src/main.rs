@@ -14,7 +14,7 @@ use game::instance::{GameInstance, Player, Tile};
 mod req_res;
 use req_res::{
     client::ClientRequest,
-    server::{send_board, send_nothing, send_player},
+    server::{send_board, send_error, send_nothing, send_player},
 };
 
 mod utils;
@@ -44,7 +44,7 @@ fn main() {
                         tile: Tile::X,
                     };
 
-                    let game_instance = GameInstance::new(
+                    let game_instance = match GameInstance::new(
                         id.clone(),
                         [
                             client_player.clone(),
@@ -53,8 +53,13 @@ fn main() {
                                 tile: Tile::O,
                             },
                         ],
-                    )
-                    .unwrap();
+                    ) {
+                        Ok(x) => x,
+                        Err(err) => {
+                            send_error(&mut stream, err.to_string()).unwrap();
+                            return;
+                        }
+                    };
 
                     games.lock().unwrap().insert(id.clone(), game_instance);
                     send_player(&mut stream, client_player).unwrap();
@@ -64,9 +69,22 @@ fn main() {
                 // returns a player
                 ClientRequest::JoinGame(id) => {
                     let mut games_locked = games.lock().unwrap();
-                    let game_instance = games_locked.get_mut(&id).unwrap();
+                    let game_instance = match games_locked.get_mut(&id) {
+                        Some(x) => x,
+                        None => {
+                            send_error(&mut stream, "game not found".to_string()).unwrap();
+                            return;
+                        }
+                    };
 
-                    let player = game_instance.add_player(addr.to_string()).unwrap();
+                    let player = match game_instance.add_player(addr.to_string()) {
+                        Ok(x) => x,
+                        Err(err) => {
+                            send_error(&mut stream, err.to_string()).unwrap();
+                            return;
+                        }
+                    };
+
                     send_player(&mut stream, player).unwrap();
                 }
 
@@ -74,18 +92,43 @@ fn main() {
                 // returns nothing
                 ClientRequest::SetTile((id, tile_idx)) => {
                     let mut games_locked = games.lock().unwrap();
-                    let game_instance = games_locked.get_mut(&id).unwrap();
+                    let game_instance = match games_locked.get_mut(&id) {
+                        Some(x) => x,
+                        None => {
+                            send_error(&mut stream, "game not found".to_string()).unwrap();
+                            return;
+                        }
+                    };
 
-                    let player = game_instance.get_player(addr.to_string()).unwrap();
+                    let player = match game_instance.get_player(addr.to_string()) {
+                        Some(x) => x,
+                        None => {
+                            send_error(&mut stream, "player not found".to_string()).unwrap();
+                            return;
+                        }
+                    };
 
-                    game_instance.set_tile(tile_idx, player.tile).unwrap();
+                    match game_instance.set_tile(tile_idx, player.tile) {
+                        Ok(_) => {}
+                        Err(err) => {
+                            send_error(&mut stream, err.to_string()).unwrap();
+                            return;
+                        }
+                    };
+
                     send_nothing(&mut stream).unwrap();
                 }
 
                 // returns the board in just plain text
                 ClientRequest::GetBoard(id) => {
-                    let games_locked = games.lock().unwrap();
-                    let game_instance = games_locked.get(&id).unwrap();
+                    let mut games_locked = games.lock().unwrap();
+                    let game_instance = match games_locked.get_mut(&id) {
+                        Some(x) => x,
+                        None => {
+                            send_error(&mut stream, "game not found".to_string()).unwrap();
+                            return;
+                        }
+                    };
 
                     send_board(&mut stream, game_instance.print_board()).unwrap();
                 }

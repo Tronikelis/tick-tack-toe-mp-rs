@@ -27,3 +27,8 @@ pub fn send_board(stream: &mut TcpStream, board: String) -> Result<()> {
     stream.write_all(board.as_bytes())?;
     return Ok(());
 }
+
+pub fn send_error(stream: &mut TcpStream, error: String) -> Result<()> {
+    stream.write_all(serde_json::to_string(&ServerResponse::Error(error))?.as_bytes())?;
+    return Ok(());
+}
