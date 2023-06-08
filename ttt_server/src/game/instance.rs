@@ -64,10 +64,7 @@ impl Board {
 
             match tile {
                 None => string.push_str(" - "),
-                Some(tile) => match tile {
-                    Tile::O => string.push_str(" O "),
-                    Tile::X => string.push_str(" X "),
-                },
+                Some(tile) => string.push_str(&format!(" {} ", tile.to_string())),
             }
         }
 
