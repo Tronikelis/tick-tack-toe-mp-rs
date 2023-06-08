@@ -1,12 +1,10 @@
 #![allow(clippy::needless_return)]
 
-
 use nanoid::nanoid;
-use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    io::{Read, Write},
-    net::{TcpListener, TcpStream},
+    io::Write,
+    net::TcpListener,
     sync::{Arc, Mutex},
     thread,
 };
@@ -14,30 +12,14 @@ use std::{
 mod game;
 use game::instance::{GameInstance, Player, Tile};
 
-fn read_from_stream(stream: &mut TcpStream) -> String {
-    let mut buffer = [0; 64];
+mod req_res;
+use req_res::{
+    client::ClientRequest,
+    server::{send_board, send_nothing, send_player, ServerResponse},
+};
 
-    if stream.read(&mut buffer).unwrap() < buffer.len() {
-        return String::from_utf8(buffer.to_vec()).unwrap();
-    }
-
-    let mut vec_buffer = vec![];
-    while stream.read(&mut buffer).unwrap() > 0 {
-        for x in buffer.iter().filter(|x| **x != 0) {
-            vec_buffer.push(*x);
-        }
-    }
-
-    return String::from_utf8(vec_buffer).unwrap();
-}
-
-#[derive(Serialize, Deserialize)]
-enum ClientCommand {
-    CreateGame,
-    JoinGame(String),
-    SetTile((String, usize)),
-    GetBoard(String),
-}
+mod utils;
+use utils::stream::read_from_stream;
 
 fn main() {
     let games: Arc<Mutex<HashMap<String, GameInstance>>> = Arc::new(Mutex::new(HashMap::new()));
@@ -49,13 +31,13 @@ fn main() {
         let games = games.clone();
 
         thread::spawn(move || loop {
-            let client_command: ClientCommand =
-                serde_json::from_str(&read_from_stream(&mut stream)).unwrap();
+            let client_command: ClientRequest =
+                serde_json::from_str(&read_from_stream(&mut stream).unwrap()).unwrap();
 
             match client_command {
                 // creates a game
                 // returns a player
-                ClientCommand::CreateGame => {
+                ClientRequest::CreateGame => {
                     let id = nanoid!();
 
                     let client_player = Player {
@@ -76,44 +58,37 @@ fn main() {
                     .unwrap();
 
                     games.lock().unwrap().insert(id.clone(), game_instance);
-
-                    stream
-                        .write_all(serde_json::to_string(&client_player).unwrap().as_bytes())
-                        .unwrap();
+                    send_player(&mut stream, client_player).unwrap();
                 }
 
                 // joins a game
                 // returns a player
-                ClientCommand::JoinGame(id) => {
+                ClientRequest::JoinGame(id) => {
                     let mut games_locked = games.lock().unwrap();
                     let game_instance = games_locked.get_mut(&id).unwrap();
 
                     let player = game_instance.add_player(addr.to_string()).unwrap();
-
-                    stream
-                        .write_all(serde_json::to_string(&player).unwrap().as_bytes())
-                        .unwrap();
+                    send_player(&mut stream, player).unwrap();
                 }
 
                 // sets tile
                 // returns nothing
-                ClientCommand::SetTile((id, tile_idx)) => {
+                ClientRequest::SetTile((id, tile_idx)) => {
                     let mut games_locked = games.lock().unwrap();
                     let game_instance = games_locked.get_mut(&id).unwrap();
 
                     let player = game_instance.get_player(addr.to_string()).unwrap();
 
                     game_instance.set_tile(tile_idx, player.tile).unwrap();
+                    send_nothing(&mut stream).unwrap();
                 }
 
                 // returns the board in just plain text
-                ClientCommand::GetBoard(id) => {
+                ClientRequest::GetBoard(id) => {
                     let games_locked = games.lock().unwrap();
                     let game_instance = games_locked.get(&id).unwrap();
 
-                    stream
-                        .write_all(game_instance.print_board().as_bytes())
-                        .unwrap();
+                    send_board(&mut stream, game_instance.print_board()).unwrap();
                 }
             }
         });
