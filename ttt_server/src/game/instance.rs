@@ -150,7 +150,11 @@ impl GameInstance {
             if player.addr.is_none() {
                 let added = Player {
                     addr: Some(addr),
-                    tile: match existing_player.as_ref().unwrap().tile {
+                    tile: match existing_player
+                        .as_ref()
+                        .ok_or(anyhow!("can't add a player if there are 0 players"))?
+                        .tile
+                    {
                         Tile::O => Tile::X,
                         Tile::X => Tile::O,
                     },

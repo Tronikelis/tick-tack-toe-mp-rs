@@ -5,5 +5,5 @@ pub enum ClientRequest {
     CreateGame,
     JoinGame(String),
     SetTile((String, usize)),
-    GetBoard(String),
+    GameLoop(String),
 }

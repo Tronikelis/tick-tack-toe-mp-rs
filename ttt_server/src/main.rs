@@ -14,7 +14,7 @@ use game::instance::{GameInstance, Player, Tile};
 mod req_res;
 use req_res::{
     client::ClientRequest,
-    server::{send_board, send_error, send_nothing, send_player},
+    server::{send_error, send_game_loop, send_nothing, send_player, GameLoop},
 };
 
 mod utils;
@@ -50,7 +50,7 @@ fn main() {
                             client_player.clone(),
                             Player {
                                 addr: None,
-                                tile: Tile::O,
+                                tile: Tile::X,
                             },
                         ],
                     ) {
@@ -120,7 +120,7 @@ fn main() {
                 }
 
                 // returns the board in just plain text
-                ClientRequest::GetBoard(id) => {
+                ClientRequest::GameLoop(id) => {
                     let mut games_locked = games.lock().unwrap();
                     let game_instance = match games_locked.get_mut(&id) {
                         Some(x) => x,
@@ -130,7 +130,13 @@ fn main() {
                         }
                     };
 
-                    send_board(&mut stream, game_instance.print_board()).unwrap();
+                    if let Some(player) = game_instance.check_wins() {
+                        send_game_loop(&mut stream, GameLoop::Won(player)).unwrap();
+                        return;
+                    }
+
+                    send_game_loop(&mut stream, GameLoop::Board(game_instance.print_board()))
+                        .unwrap();
                 }
             }
         });

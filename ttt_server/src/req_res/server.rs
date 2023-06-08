@@ -7,28 +7,34 @@ use crate::game::instance::Player;
 #[derive(Serialize, Deserialize)]
 pub enum ServerResponse {
     Error(String),
-    NothingRes,
+    Nothing,
 
-    PlayerRes(Player),
-    BoardRes(String),
+    Player(Player),
+    GameLoop(GameLoop),
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum GameLoop {
+    Board(String),
+    Won(Player),
 }
 
 pub fn send_player(stream: &mut TcpStream, player: Player) -> Result<()> {
-    stream.write_all(serde_json::to_string(&ServerResponse::PlayerRes(player))?.as_bytes())?;
+    stream.write_all(serde_json::to_string(&ServerResponse::Player(player))?.as_bytes())?;
     return Ok(());
 }
 
 pub fn send_nothing(stream: &mut TcpStream) -> Result<()> {
-    stream.write_all(serde_json::to_string(&ServerResponse::NothingRes)?.as_bytes())?;
-    return Ok(());
-}
-
-pub fn send_board(stream: &mut TcpStream, board: String) -> Result<()> {
-    stream.write_all(board.as_bytes())?;
+    stream.write_all(serde_json::to_string(&ServerResponse::Nothing)?.as_bytes())?;
     return Ok(());
 }
 
 pub fn send_error(stream: &mut TcpStream, error: String) -> Result<()> {
     stream.write_all(serde_json::to_string(&ServerResponse::Error(error))?.as_bytes())?;
+    return Ok(());
+}
+
+pub fn send_game_loop(stream: &mut TcpStream, game_loop: GameLoop) -> Result<()> {
+    stream.write_all(serde_json::to_string(&ServerResponse::GameLoop(game_loop))?.as_bytes())?;
     return Ok(());
 }
